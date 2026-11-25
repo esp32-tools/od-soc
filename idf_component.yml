@@ -1,0 +1,5 @@
+version: "0.1.0"
+description: "Ultra-lean on-device battery SOC (`od soc code` <= 0.5 KB flash, 16 B RAM, 0 FPU) + hypercompressed `od soc history` + M5StickC Plus AXP192 wrapper"
+url: "https://github.com/esp32-tools/od-soc"
+dependencies:
+  idf: ">=5.2.0"
