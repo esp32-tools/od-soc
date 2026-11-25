@@ -51,6 +51,9 @@ class FuelGauge {
     // Call right before entering `wifi-sleep` or `usb-sleep` (drops AXP192 ADC to 25 Hz cleanly).
     bool prepare_sleep(uint32_t now_s, bool usb_sleep) noexcept;
 
+    // Call on wake from wifi-sleep (restores AXP192 ADC to 200 Hz preserving coulombs).
+    bool wake(uint32_t now_s) noexcept;
+
     // Records an explicit lifecycle event (ARM, DISARM, SHUTDOWN, THERMAL, FAULT).
     void log_event(EventType type, uint32_t now_s) noexcept;
 

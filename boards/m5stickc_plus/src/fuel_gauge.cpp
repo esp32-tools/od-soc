@@ -174,6 +174,34 @@ bool FuelGauge::prepare_sleep(uint32_t now_s, bool usb_sleep) noexcept {
     return true;
 }
 
+bool FuelGauge::wake(uint32_t now_s) noexcept {
+    if (!rtc_) return false;
+    int32_t sleep_dq_uah = 0;
+    sensor_.set_adc_hz_preserving_coulombs(200, rtc_->coulomb, sleep_dq_uah);
+    RawReading raw{};
+    if (!sensor_.read_telemetry(raw)) return false;
+    last_raw_ = raw;
+    const uint32_t dt = now_s >= rtc_->last_step_s ? (now_s - rtc_->last_step_s) : 0u;
+    const Sample s{
+        raw.bat_mv,
+        raw.bat_ma,
+        sleep_dq_uah,
+        static_cast<uint16_t>(dt > 65535u ? 65535u : dt),
+        static_cast<uint8_t>(SAMPLE_HAS_DQ |
+                             (raw.charge_done ? SAMPLE_CHARGE_DONE : 0u) |
+                             (raw.charging ? SAMPLE_CHARGING : 0u)),
+        0,
+    };
+    step(rtc_->soc, params_, s);
+    rtc_->last_step_s = now_s;
+    rtc_->event_dq_accum_uah += sleep_dq_uah;
+    rtc_->prev_usb_present = raw.usb_present ? 1u : 0u;
+    rtc_->prev_charging = raw.charging ? 1u : 0u;
+    rtc_->prev_charge_done = raw.charge_done ? 1u : 0u;
+    push_od_event(EventType::WAKE, now_s, raw);
+    return true;
+}
+
 void FuelGauge::log_event(EventType type, uint32_t now_s) noexcept {
     if (!rtc_) return;
     push_od_event(type, now_s, last_raw_);
